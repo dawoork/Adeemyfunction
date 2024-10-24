@@ -163,3 +163,5 @@ cython_debug/
 #.idea/
 
 .python_packages
+ademeyfunction.json
+local.settings.json
