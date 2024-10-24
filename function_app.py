@@ -24,19 +24,37 @@ app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 def AdeemyFuntionAds(req: func.HttpRequest) -> func.HttpResponse:
     logging.info('Python HTTP trigger function processed a request.')
 
-    name = req.params.get('name')
-    if not name:
-        try:
-            req_body = req.get_json()
-        except ValueError:
-            pass
-        else:
-            name = req_body.get('name')
+    try:
+        client = get_ga4_client()
+        response = client.run_report(request={
+            "property": f"properties/{os.environ['GA4_PROPERTY_ID']}",
+            "dimensions": [{"name": "campaignId"}],
+            "metrics": [
+                {"name": "advertiserAdImpressions"},  # Impresiones
+                {"name": "advertiserAdClicks"},  # Clics
+                {"name": "advertiserAdCostPerClick"},  # Costo por Clic (CPC)
+                {"name": "advertiserAdCost"},  # Costo total
+                {"name": "returnOnAdSpend"}  # Retorno sobre Inversión Publicitaria (ROAS)
+            ],
 
-    if name:
-        return func.HttpResponse(f"Hello, {name}. This HTTP triggered function executed successfully.")
-    else:
-        return func.HttpResponse(
-             "Keeeev. Pass a name in the query string or in the request body for a personalized response.",
-             status_code=200
-        )
+            "date_ranges": [{"start_date": "2024-01-01", "end_date": "today"}]
+        })
+        # Procesar la respuesta
+        data = []
+        for row in response.rows:
+            data.append({
+                "campaignId": row.dimension_values[0].value,
+                "advertiserAdImpressions": row.metric_values[0].value,
+                "advertiserAdClicks": row.metric_values[1].value,
+                "advertiserAdCostPerClick": row.metric_values[2].value,
+                "advertiserAdCost": row.metric_values[3].value,
+                "returnOnAdSpend": row.metric_values[4].value
+            })
+        # Convertir datos a JSON
+        data_json = json.dumps(data)
+        # Subir datos a Blob Storage
+        upload_to_blob_storage(data_json)
+        return func.HttpResponse("Datos subidos a Blob Storage.", status_code=200)
+    except Exception as e:
+        logging.error(f"Error al obtener datos de GA4: {e}")
+        return func.HttpResponse(f"Error: {e}", status_code=500)
