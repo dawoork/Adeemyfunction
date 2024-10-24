@@ -39,7 +39,7 @@ def AdeemyFuntionAds(req: func.HttpRequest) -> func.HttpResponse:
 
             "date_ranges": [{"start_date": "2024-01-01", "end_date": "today"}]
         })
-        # Procesar la respuestaa
+        # Procesar la respuesta
         data = []
         for row in response.rows:
             data.append({
