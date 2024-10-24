@@ -1,6 +1,19 @@
 import azure.functions as func
 import logging
+import os
+import json
 
+def get_ga4_client():
+    credentials_info = json.loads(os.environ['GOOGLE_APPLICATION_CREDENTIALS_JSON'])
+    credentials = service_account.Credentials.from_service_account_info(credentials_info)
+    client = BetaAnalyticsDataClient(credentials=credentials)
+    return client
+
+def upload_to_blob_storage(data):
+    blob_service_client = BlobServiceClient.from_connection_string(os.environ['BLOB_CONNECTION_STRING'])
+    container_name = os.environ['BLOB_CONTAINER_NAME']
+    blob_client = blob_service_client.get_blob_client(container=container_name, blob='ga4_data.json')
+    blob_client.upload_blob(data, overwrite=True)
 
 app = func.FunctionApp(http_auth_level=func.AuthLevel.FUNCTION)
 
